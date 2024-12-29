@@ -9,86 +9,43 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class WebCrawlerService {
 
     private static final int CRAWL_LIMIT = 20;
 
-    public void crawl(String startUrl) {
+    public List<Map.Entry<String, Document>> crawl(String startUrl) throws IOException {
+        Queue<String> urlsToCrawl = new LinkedList<>();
         Set<String> visitedUrls = new HashSet<>();
-        Queue<String> urlQueue = new LinkedList<>();
-        urlQueue.add(startUrl);
+        List<Map.Entry<String, Document>> crawledDocuments = new LinkedList<>();
 
-        int currentCrawlCount = 0;
-        Random random = new Random();
+        urlsToCrawl.add(startUrl);
+        visitedUrls.add(startUrl);
 
-        while (!urlQueue.isEmpty() && currentCrawlCount < CRAWL_LIMIT) {
-            String currentUrl = urlQueue.poll();
+        while (!urlsToCrawl.isEmpty() && crawledDocuments.size() < CRAWL_LIMIT) {
+            String currentUrl = urlsToCrawl.poll();
             System.out.println("Crawling: " + currentUrl);
 
-
             try {
-                Thread.sleep(1000 + random.nextInt(2000));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+                Document document = Jsoup.connect(currentUrl).get();
+                crawledDocuments.add(new AbstractMap.SimpleEntry<>(currentUrl, document));
 
-            try {
-                Document document = fetchDocument(currentUrl);
-                if (document != null) {
-                    Elements links = document.select("a[href]");
-                    for (Element link : links) {
-                        String url = formatUrl(link.attr("href"), currentUrl);
-                        if (url != null && !visitedUrls.contains(url)) {
-                            urlQueue.add(url);
-                            visitedUrls.add(url);
-                        }
-                    }
-                }
+                // Extract hyperlinks
+                document.select("a[href]").stream()
+                        .map(link -> link.attr("abs:href"))
+                        .filter(link -> !link.isEmpty() && !visitedUrls.contains(link))
+                        .forEach(link -> {
+                            urlsToCrawl.add(link);
+                            visitedUrls.add(link);
+                        });
+
             } catch (IOException e) {
-                System.err.println("Failed to retrieve " + currentUrl + ": " + e.getMessage());
+                System.out.println("Failed to retrieve " + currentUrl + ": " + e.getMessage());
             }
+        }
 
-            currentCrawlCount++;
-        }
-    }
-
-    private Document fetchDocument(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-
-        try {
-            if (connection.getResponseCode() == 200) {
-                return Jsoup.parse(connection.getInputStream(), null, urlString);
-            } else {
-                System.err.println("Failed to fetch " + urlString + ": HTTP " + connection.getResponseCode());
-            }
-        } finally {
-            connection.disconnect();
-        }
-        return null;
-    }
-
-    private String formatUrl(String url, String currentUrl) {
-        if (url.startsWith("#")) {
-            return null;
-        }
-        if (url.startsWith("//")) {
-            return "https:" + url;
-        }
-        if (url.startsWith("/")) {
-            return currentUrl.split("/")[0] + "//" + currentUrl.split("/")[2] + url;
-        }
-        if (!url.startsWith("http")) {
-            return null;
-        }
-        return url.split("#")[0];
+        return crawledDocuments;
     }
 }
