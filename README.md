@@ -50,5 +50,5 @@ http://localhost:8080/crawl-and-index?url=https://en.wikipedia.org/wiki/Google
 ```
 If you want the complete procedures how it works and the flow, in my handwriting
 
-- [here it is](
+- [here it is](https://github.com/ratneeshh/SearchEngine/blob/main/ratnesh%20pdf.pdf)
 Inspired by : The Coding Sloth [link](https://www.youtube.com/watch?v=WCpimlH0Kck&t=193s)
