@@ -48,5 +48,7 @@ To start the crawling and indexing process, send a GET request to the `/crawl-an
 ```bash
 http://localhost:8080/crawl-and-index?url=https://en.wikipedia.org/wiki/Google
 ```
+If you want the complete procedures how it works and the flow, in my handwriting
 
+- [here it is](
 Inspired by : The Coding Sloth [link](https://www.youtube.com/watch?v=WCpimlH0Kck&t=193s)
